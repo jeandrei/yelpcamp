@@ -10,7 +10,17 @@ const methodOverride = require('method-override');
 //Require campground lá da pasta models que demos um export
 const Campground = require('./models/campground');
 
+//morgan aula 415 - ajuda na depuração de erros
+//instala npm i morgan --silent
+//const morgan = require('morgan');
+//app.use(morgan('tiny'));
 
+
+
+//middleware app.use/next() aula 416
+//app.use é chamado em todas as requisições então se precisar que algo sempre seja executado
+//NA REQUISIÇÃO OU SEJA SÓ QUANDO ATUALIZAR A PÁGINA
+//use o app.use porem ele executa o primeiro e para a execução para continuar tem que usar o next
 
 //Conectamos ao banco de dados mongoose
 //no curso abaixo de useNewUrlParser ele colocou useCreateIndex: true, 
@@ -34,6 +44,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
 //parse de request body necessário para enviar os dados pelo post req.body aula 410
+//fala para o express todas as requisições use essa função especial urlencoded
 app.use(express.urlencoded({extended: true}))
 //string que será usada para identificar o method override ?_method=DELETE
 app.use(methodOverride('_method'));
@@ -83,6 +94,11 @@ app.put('/campgrounds/:id', async (req,res) => {
     res.redirect(`/campgrounds/${campground._id}`)
 })
 
+app.delete('/campgrounds/:id', async (req, res) => {
+    const { id } = req.params;
+    await Campground.findByIdAndDelete(id);
+    res.redirect('/campgrounds');
+})
 
 
 app.listen(3000, () => {
