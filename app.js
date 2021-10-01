@@ -4,6 +4,9 @@ const express = require('express');
 const path = require('path');
 //Require no mongoose
 const mongoose = require('mongoose');
+// ejs-mate para criação de layout tem que instalar
+// npm i ejs-mate --silent
+const ejsMate = require('ejs-mate');
 //method override necessário para poder usar metodos como DELETE, PUT ?_method=DELETE
 //tem que instalar npm i method-override --silent
 const methodOverride = require('method-override');
@@ -37,6 +40,10 @@ db.once("open", () => {
 
 //Atribuimos o express a uma variável app
 const app = express();
+
+//Definimos que o app irá usar como engine o ejs mate que está declarado lá em cima
+//os layouts ficarao na pasta views/layouts
+app.engine('ejs', ejsMate);
 
 
 //Configuramos a pasta views como padrão e definimos o ejs como o view engine
