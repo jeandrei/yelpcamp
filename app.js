@@ -2,11 +2,19 @@
 const express = require('express');
 //atribuimos a uma constante path o caminho da aplicação
 const path = require('path');
+/**
+ * *******************************************
+ * IMPORTANTE MONGOOSE REQUER NODE 12 OU ACIMA
+ * *******************************************
+ */
 //Require no mongoose
 const mongoose = require('mongoose');
 // ejs-mate para criação de layout tem que instalar
 // npm i ejs-mate --silent
 const ejsMate = require('ejs-mate');
+//catchAsync para não precisar fazer try catch em todas as validações nas rotas 
+//está em utils/catchAsync lá tem mais informações coloca em todas as rotas com async
+const catchAsync = require('./utils/catchAsync');
 //method override necessário para poder usar metodos como DELETE, PUT ?_method=DELETE
 //tem que instalar npm i method-override --silent
 const methodOverride = require('method-override');
@@ -61,10 +69,10 @@ app.get('/', (req,res) => {
     res.render('home');
 })
 
-app.get('/campgrounds', async (req,res) => {
+app.get('/campgrounds', catchAsync(async (req,res) => {
     const campgrounds = await Campground.find({});
     res.render('campgrounds/index', { campgrounds });
-})
+}))
 
 //ADD NEW LOAD THE FORM
 //nessa rota a ordem importa o /campgrounds/new tem que vim antes 
@@ -74,39 +82,42 @@ app.get('/campgrounds/new', (req, res) => {
 })
 
 //SAVE THE DATA SENT FROM THE FORM aula 410
-app.post('/campgrounds', async (req, res) => {
+app.post('/campgrounds', catchAsync(async (req, res, next) => {   
     const campground = new Campground(req.body.campground);
     await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-})
+    res.redirect(`/campgrounds/${campground._id}`);   
+}))
 
 //SHOW
-app.get('/campgrounds/:id', async (req,res) => { 
+app.get('/campgrounds/:id', catchAsync(async (req,res) => { 
     const campground = await Campground.findById(req.params.id);
     res.render('campgrounds/show', { campground });
-})
+}))
 
 //EDIT
 //Get data to show in the form
-app.get('/campgrounds/:id/edit', async (req,res) => {
+app.get('/campgrounds/:id/edit', catchAsync(async (req,res) => {
     const campground = await Campground.findById(req.params.id);
     res.render('campgrounds/edit', { campground });
-})
+}))
 
 //aula 411
-app.put('/campgrounds/:id', async (req,res) => {
+app.put('/campgrounds/:id', catchAsync(async (req,res) => {
     //res.send("IT WORKED!!!");
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id,{ ...req.body.campground });
     res.redirect(`/campgrounds/${campground._id}`)
-})
+}))
 
-app.delete('/campgrounds/:id', async (req, res) => {
+app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds');
-})
+}))
 
+app.use((err,req, res, next) => {
+    res.send('Oh boy, something went wrong!');
+})
 
 app.listen(3000, () => {
     console.log('Serving on port 3000');
