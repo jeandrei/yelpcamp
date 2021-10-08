@@ -12,14 +12,25 @@ const mongoose = require('mongoose');
 // ejs-mate para criação de layout tem que instalar
 // npm i ejs-mate --silent
 const ejsMate = require('ejs-mate');
+//joi npm i joi - biblioteca para validação aula 444
+const Joi = require('joi');
+//contem a schema de validação necessário para linha campgroundSchema.validate aula 445
+const { campgroundSchema } = require('./schemas.js');
 //catchAsync para não precisar fazer try catch em todas as validações nas rotas 
 //está em utils/catchAsync lá tem mais informações coloca em todas as rotas com async
 const catchAsync = require('./utils/catchAsync');
+//Classe para tratamento de erros aula 442
+//Essa classe está em utils/ExpressError.js
+const ExpressError = require('./utils/ExpressError');
+
 //method override necessário para poder usar metodos como DELETE, PUT ?_method=DELETE
 //tem que instalar npm i method-override --silent
 const methodOverride = require('method-override');
 //Require campground lá da pasta models que demos um export
 const Campground = require('./models/campground');
+const { join } = require('path');
+
+
 
 //morgan aula 415 - ajuda na depuração de erros
 //instala npm i morgan --silent
@@ -65,6 +76,18 @@ app.use(express.urlencoded({extended: true}))
 app.use(methodOverride('_method'));
 
 
+const validateCampground = (req, res, next) => {    
+    const { error } = campgroundSchema.validate(req.body);
+    if(error){
+        //cria uma unica linha com a mensagem de erro
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    } else {
+        next();
+    }
+}
+
+
 app.get('/', (req,res) => {
     res.render('home');
 })
@@ -82,7 +105,9 @@ app.get('/campgrounds/new', (req, res) => {
 })
 
 //SAVE THE DATA SENT FROM THE FORM aula 410
-app.post('/campgrounds', catchAsync(async (req, res, next) => {   
+app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) => {   
+    //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
+    //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
     const campground = new Campground(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);   
@@ -102,7 +127,7 @@ app.get('/campgrounds/:id/edit', catchAsync(async (req,res) => {
 }))
 
 //aula 411
-app.put('/campgrounds/:id', catchAsync(async (req,res) => {
+app.put('/campgrounds/:id', validateCampground, catchAsync(async (req,res) => {
     //res.send("IT WORKED!!!");
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id,{ ...req.body.campground });
@@ -115,8 +140,25 @@ app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     res.redirect('/campgrounds');
 }))
 
+
+
+//Se for chamado uma rota/página inexistente sempre vai cair aqui aula 442
+//vai criar um objeto ExpressError lá do arquivo utils/ExpressError.js 
+//o next vai passar para a linha abaixo app.use na variável err
+app.all('*', (req, res, next) => {
+    next(new ExpressError('Page Not Found', 404));
+})
+
 app.use((err,req, res, next) => {
-    res.send('Oh boy, something went wrong!');
+    //os valores de err vem do app.all
+    //os valores de statusCode e message vai ser passada por err de app.all mas na verdade vem lá
+    //do ExpressError
+    //passa o que tem em err para statusCode se não tiver nada passa 500 valor defoult
+    const { statusCode = 500 } = err;
+    // se não tiver nada em err.message passa Ho no something went wrong
+    if(!err.message) err.message = 'Oh No, Something Went Wrong!';
+    //render a pagina error.ejs passando a variavel err que vai conter o erro e o código status
+    res.status(statusCode).render('error', { err });   
 })
 
 app.listen(3000, () => {
