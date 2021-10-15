@@ -105,6 +105,7 @@ app.get('/campgrounds/new', (req, res) => {
 })
 
 //SAVE THE DATA SENT FROM THE FORM aula 410
+// validação validateCampground aula 445 schema no arquivo schemas.js validateCampground está aqui no app.js
 app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) => {   
     //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
     //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
