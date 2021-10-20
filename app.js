@@ -15,7 +15,7 @@ const ejsMate = require('ejs-mate');
 //joi npm i joi - biblioteca para validação aula 444
 const Joi = require('joi');
 //contem a schema de validação necessário para linha campgroundSchema.validate aula 445
-const { campgroundSchema } = require('./schemas.js');
+const { campgroundSchema, reviewSchema } = require('./schemas.js');
 //catchAsync para não precisar fazer try catch em todas as validações nas rotas 
 //está em utils/catchAsync lá tem mais informações coloca em todas as rotas com async
 const catchAsync = require('./utils/catchAsync');
@@ -28,6 +28,10 @@ const ExpressError = require('./utils/ExpressError');
 const methodOverride = require('method-override');
 //Require campground lá da pasta models que demos um export
 const Campground = require('./models/campground');
+
+//Require review model
+const Review = require('./models/review');
+
 const { join } = require('path');
 
 
@@ -76,9 +80,23 @@ app.use(express.urlencoded({extended: true}))
 app.use(methodOverride('_method'));
 
 
+//middleware para validar backend campground a schema está em schemas.js
 const validateCampground = (req, res, next) => {    
     const { error } = campgroundSchema.validate(req.body);
     if(error){
+        //cria uma unica linha com a mensagem de erro
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    } else {
+        next();
+    }
+}
+
+
+//middleware para validar backend review a schema está em schemas.js
+const validadeReview = (req, res, next) => {
+   const { error }  = reviewSchema.validate(req.body);  
+   if(error){
         //cria uma unica linha com a mensagem de erro
         const msg = error.details.map(el => el.message).join(',');
         throw new ExpressError(msg, 400);
@@ -116,7 +134,7 @@ app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) =
 
 //SHOW
 app.get('/campgrounds/:id', catchAsync(async (req,res) => { 
-    const campground = await Campground.findById(req.params.id);
+    const campground = await Campground.findById(req.params.id).populate('reviews');    
     res.render('campgrounds/show', { campground });
 }))
 
@@ -139,6 +157,24 @@ app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds');
+}))
+
+//reviws aula 464
+app.post('/campgrounds/:id/reviews', validadeReview, catchAsync(async (req, res) => {
+    //find the correspond campground that we want to add the review to
+    const campground = await Campground.findById(req.params.id);
+    //Create a new review
+    const review = new Review(req.body.review);
+    //push into the campground.reviews defined in the models/CampgroundSchema/reviews:[]
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`);
+    /**
+     * A validação backend está lá no arquivo schemas.js
+     * module.exports.reviewSchema = Joi.object({
+     * Aula 465
+     */
 }))
 
 

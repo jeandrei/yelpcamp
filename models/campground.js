@@ -14,7 +14,18 @@ const CampgroundSchema = new Schema({
     image: String,
     price: Number,
     description: String,
-    location: String
+    location: String,
+    //reviews aula 462 um campground pode ter vários reviews o model está em reviews.js
+    reviews: [
+        {
+            //reviews é um ObjectId que vem do model review
+            //tipo ObjectId vai armazenar todos os ids dos reviews
+            type: Schema.Types.ObjectId,
+            //referente ao Review model que está declarado em models/reviews.js
+            ref: 'Review'
+        }
+    ]
+
 });
 
 //Exportamos para poder usar nos outros arquivos
