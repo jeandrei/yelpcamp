@@ -2,6 +2,10 @@
 
 //damos um require no mongoose
 const mongoose = require('mongoose');
+const { campgroundSchema } = require('../schemas');
+
+//damos um require no review
+const Review = require('./review');
 
 // criamos uma variavel para a schema pois depois fica mais fácil de chamar
 // ao invés de fazer mongoose.Schema.Type se atribuido a uma variável faz apenas Schema.Type
@@ -27,6 +31,24 @@ const CampgroundSchema = new Schema({
     ]
 
 });
+
+
+//AO REMOVER UMA CAMPGROUND REMOVER TODOS OS REVIEWS DELA
+//aula 469 só executa quando deleta
+//quando lá no app.delete(campgrounds/id)
+//executa a linha await Campground.findByIdAndDelete(id) ele executa essa middleware
+CampgroundSchema.post('findOneAndDelete', async function(doc){
+    //console.log(doc);
+    if(doc){
+        //remove todos os reviews em que o _id exista em doc.reviews array 
+        await Review.deleteMany({
+            _id: {
+                $in: doc.reviews
+            }
+        })
+    }
+})
+
 
 //Exportamos para poder usar nos outros arquivos
 module.exports = mongoose.model('Campground', CampgroundSchema);

@@ -153,6 +153,11 @@ app.put('/campgrounds/:id', validateCampground, catchAsync(async (req,res) => {
     res.redirect(`/campgrounds/${campground._id}`)
 }))
 
+
+//remove uma campground
+//para remover todos os reviews da campground foi criado uma middleware CampgroundSchema.post('findOneAndDelete'
+//que executa ao deletar um lá no arquivo models/campground 
+//aula 469
 app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
@@ -177,6 +182,19 @@ app.post('/campgrounds/:id/reviews', validadeReview, catchAsync(async (req, res)
      */
 }))
 
+
+//APAGAR APENAS UM REVIEW
+//Apaga um review precisamos do id do campground aqui também para remover a referência
+//que o review tem em campgrounds Aula 468
+app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req, res) => {
+    const {id, reviewId } = req.params;
+    //1ºremovo as referências desse review lá no campground para isso
+    //localizo o campground em modo update passando um objeto que contêm 
+    //um id e um método pull pull remove itens de um array
+    await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
+    await Review.findByIdAndDelete(reviewId);
+    res.redirect(`/campgrounds/${id}`);
+}))
 
 
 //Se for chamado uma rota/página inexistente sempre vai cair aqui aula 442
