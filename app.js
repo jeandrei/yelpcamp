@@ -5,6 +5,8 @@ const path = require('path');
 /**
  * *******************************************
  * IMPORTANTE MONGOOSE REQUER NODE 12 OU ACIMA
+ * para instalar as dependencias automaticamente execute npm install
+ * express router para separar as rotas bem importante aula 471 e 472
  * *******************************************
  */
 //Require no mongoose
