@@ -14,48 +14,37 @@ const mongoose = require('mongoose');
 // ejs-mate para criação de layout tem que instalar
 // npm i ejs-mate --silent
 const ejsMate = require('ejs-mate');
-//joi npm i joi - biblioteca para validação aula 444
-const Joi = require('joi');
-//contem a schema de validação necessário para linha campgroundSchema.validate aula 445
-const { campgroundSchema, reviewSchema } = require('./schemas.js');
-//catchAsync para não precisar fazer try catch em todas as validações nas rotas 
-//está em utils/catchAsync lá tem mais informações coloca em todas as rotas com async
-const catchAsync = require('./utils/catchAsync');
+
+//tem que instalar npm i express-session
+const session = require('express-session');
+
+//npm i connect-flash
+const flash = require('connect-flash');
+
 //Classe para tratamento de erros aula 442
 //Essa classe está em utils/ExpressError.js
 const ExpressError = require('./utils/ExpressError');
 
+
 //method override necessário para poder usar metodos como DELETE, PUT ?_method=DELETE
 //tem que instalar npm i method-override --silent
 const methodOverride = require('method-override');
-//Require campground lá da pasta models que demos um export
-const Campground = require('./models/campground');
-
-//Require review model
-const Review = require('./models/review');
-
-const { join } = require('path');
 
 
+//******************ROTAS importadas da pasta routes******************
+//Requer a rota para campground arquivo /routes/campgrounds.js aula 484
+const campgrounds = require('./routes/campgrouns');
+//mesma coisa da linha de cima só que para as rotas do review
+const reviews = require('./routes/reviews');
 
-//morgan aula 415 - ajuda na depuração de erros
-//instala npm i morgan --silent
-//const morgan = require('morgan');
-//app.use(morgan('tiny'));
 
-
-
-//middleware app.use/next() aula 416
-//app.use é chamado em todas as requisições então se precisar que algo sempre seja executado
-//NA REQUISIÇÃO OU SEJA SÓ QUANDO ATUALIZAR A PÁGINA
-//use o app.use porem ele executa o primeiro e para a execução para continuar tem que usar o next
-
+/*****************CONEXÃO COM O BANCO DE DADOS *************/
 //Conectamos ao banco de dados mongoose
 //no curso abaixo de useNewUrlParser ele colocou useCreateIndex: true, 
 //mas não é mais suportado
 mongoose.connect('mongodb://localhost:27017/yelp-camp',{ 
     useNewUrlParser: true, 
-    useUnifiedTopology: true 
+    useUnifiedTopology: true    
 });
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
@@ -63,17 +52,19 @@ db.once("open", () => {
     console.log("Database connected");
 });
 
+
+
 //Atribuimos o express a uma variável app
 const app = express();
+
 
 //Definimos que o app irá usar como engine o ejs mate que está declarado lá em cima
 //os layouts ficarao na pasta views/layouts
 app.engine('ejs', ejsMate);
-
-
 //Configuramos a pasta views como padrão e definimos o ejs como o view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
+
 
 //parse de request body necessário para enviar os dados pelo post req.body aula 410
 //fala para o express todas as requisições use essa função especial urlencoded
@@ -81,122 +72,50 @@ app.use(express.urlencoded({extended: true}))
 //string que será usada para identificar o method override ?_method=DELETE
 app.use(methodOverride('_method'));
 
+//Define um caminho estático para a pasta public
+//dessa forma podemos apenas chamar tudo o que está dentro de /public
+//apenas pelo nome do arquivo exemplo <script src="arquivo.js">
+app.use(express.static(path.join(__dirname, 'public')));
 
-//middleware para validar backend campground a schema está em schemas.js
-const validateCampground = (req, res, next) => {    
-    const { error } = campgroundSchema.validate(req.body);
-    if(error){
-        //cria uma unica linha com a mensagem de erro
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
+//Session Aula 487
+const sessionConfig = {
+    secret: 'thisshouldbeabettersecret!',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        //1000 milisegundos em um segundo * 60 segundos= 1 minuto
+        // * 60 minutos em uma hora * 24 horas = 1dia * 7 dias da semana
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
     }
 }
+app.use(session(sessionConfig))
+app.use(flash());
 
 
-//middleware para validar backend review a schema está em schemas.js
-const validadeReview = (req, res, next) => {
-   const { error }  = reviewSchema.validate(req.body);  
-   if(error){
-        //cria uma unica linha com a mensagem de erro
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
-    }
-}
 
+//middleware para apresentar a flash aula 488
+app.use((req, res, next) => {
+    //sejá lá o que esteja em res.locals.success teremos acesso no boilertemplate, não tem que passar
+    //em toda request vamos pegar seja la o que tiver em req.flash('success') e passar 
+    //em locals na chave success <%= success %>
+    res.locals.success = req.flash('success');
+    res.locals.error = req.flash('error');
+    next();
+})
+
+//********************USA AS ROTAS IMPORTADAS DA PASTA ROUTES******* */
+//rota para campgrounds tem que dar um require('./routes/campgrouns') lá em cima
+app.use('/campgrounds', campgrounds);
+//mesma coisa da linha acima só que para os reviews
+app.use('/campgrounds/:id/reviews', reviews);
+
+//***************ROUTES************** */
 
 app.get('/', (req,res) => {
     res.render('home');
 })
-
-app.get('/campgrounds', catchAsync(async (req,res) => {
-    const campgrounds = await Campground.find({});
-    res.render('campgrounds/index', { campgrounds });
-}))
-
-//ADD NEW LOAD THE FORM
-//nessa rota a ordem importa o /campgrounds/new tem que vim antes 
-//do /campgrounds/:id caso contrário ele vai tratar o new como um id
-app.get('/campgrounds/new', (req, res) => {
-    res.render('campgrounds/new');
-})
-
-//SAVE THE DATA SENT FROM THE FORM aula 410
-// validação validateCampground aula 445 schema no arquivo schemas.js validateCampground está aqui no app.js
-app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) => {   
-    //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
-    //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
-    const campground = new Campground(req.body.campground);
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);   
-}))
-
-//SHOW
-app.get('/campgrounds/:id', catchAsync(async (req,res) => { 
-    const campground = await Campground.findById(req.params.id).populate('reviews');    
-    res.render('campgrounds/show', { campground });
-}))
-
-//EDIT
-//Get data to show in the form
-app.get('/campgrounds/:id/edit', catchAsync(async (req,res) => {
-    const campground = await Campground.findById(req.params.id);
-    res.render('campgrounds/edit', { campground });
-}))
-
-//aula 411
-app.put('/campgrounds/:id', validateCampground, catchAsync(async (req,res) => {
-    //res.send("IT WORKED!!!");
-    const { id } = req.params;
-    const campground = await Campground.findByIdAndUpdate(id,{ ...req.body.campground });
-    res.redirect(`/campgrounds/${campground._id}`)
-}))
-
-
-//remove uma campground
-//para remover todos os reviews da campground foi criado uma middleware CampgroundSchema.post('findOneAndDelete'
-//que executa ao deletar um lá no arquivo models/campground 
-//aula 469
-app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
-    const { id } = req.params;
-    await Campground.findByIdAndDelete(id);
-    res.redirect('/campgrounds');
-}))
-
-//reviws aula 464
-app.post('/campgrounds/:id/reviews', validadeReview, catchAsync(async (req, res) => {
-    //find the correspond campground that we want to add the review to
-    const campground = await Campground.findById(req.params.id);
-    //Create a new review
-    const review = new Review(req.body.review);
-    //push into the campground.reviews defined in the models/CampgroundSchema/reviews:[]
-    campground.reviews.push(review);
-    await review.save();
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-    /**
-     * A validação backend está lá no arquivo schemas.js
-     * module.exports.reviewSchema = Joi.object({
-     * Aula 465
-     */
-}))
-
-
-//APAGAR APENAS UM REVIEW
-//Apaga um review precisamos do id do campground aqui também para remover a referência
-//que o review tem em campgrounds Aula 468
-app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req, res) => {
-    const {id, reviewId } = req.params;
-    //1ºremovo as referências desse review lá no campground para isso
-    //localizo o campground em modo update passando um objeto que contêm 
-    //um id e um método pull pull remove itens de um array
-    await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
-    await Review.findByIdAndDelete(reviewId);
-    res.redirect(`/campgrounds/${id}`);
-}))
 
 
 //Se for chamado uma rota/página inexistente sempre vai cair aqui aula 442
@@ -221,3 +140,40 @@ app.use((err,req, res, next) => {
 app.listen(3000, () => {
     console.log('Serving on port 3000');
 })
+
+
+//morgan aula 415 - ajuda na depuração de erros
+//instala npm i morgan --silent
+//const morgan = require('morgan');
+//app.use(morgan('tiny'));
+
+
+
+//middleware app.use/next() aula 416
+//app.use é chamado em todas as requisições então se precisar que algo sempre seja executado
+//NA REQUISIÇÃO OU SEJA SÓ QUANDO ATUALIZAR A PÁGINA
+//use o app.use porem ele executa o primeiro e para a execução para continuar tem que usar o next
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
