@@ -30,13 +30,36 @@ const ExpressError = require('./utils/ExpressError');
 //tem que instalar npm i method-override --silent
 const methodOverride = require('method-override');
 
+/**
+ * AUTENTICAÇÃO Aula 504
+ * usaremos:
+ * passport http://www.passportjs.org
+ * Passport-Local http://www.passportjs.org/packages/passport-local
+ * passport-local-mongoose https://www.npmjs.com/package/passport-local-mongoose
+ * npm install passport passport-local passport-local-mongoose
+ * 1-cria um model user.js
+ * 2 - Require passport e passport-local
+ * 3 - Require User Model
+ * 4 - abaixo da session app.use(flash()); iniciamos o passport
+ * app.use(passport.initialize()) e app.use(passport.session());
+ * 5 - na pasta routers criamos um arquivo de rotas users.js
+ * 5 - Cria os formulários views/users e rotas routes/users
+ * /register - Form
+ * POST /register - cria um usuário
+ * 6 - Require users route
+ * 
+ */
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
+
 
 //******************ROTAS importadas da pasta routes******************
 //Requer a rota para campground arquivo /routes/campgrounds.js aula 484
-const campgrounds = require('./routes/campgrouns');
+const campgroundRoutes = require('./routes/campgrouns');
 //mesma coisa da linha de cima só que para as rotas do review
-const reviews = require('./routes/reviews');
-
+const reviewsRoutes = require('./routes/reviews');
+const userRoutes = require('./routes/users');
 
 /*****************CONEXÃO COM O BANCO DE DADOS *************/
 //Conectamos ao banco de dados mongoose
@@ -93,6 +116,13 @@ const sessionConfig = {
 app.use(session(sessionConfig))
 app.use(flash());
 
+//Autenticação Aula 506
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 
 //middleware para apresentar a flash aula 488
@@ -105,11 +135,14 @@ app.use((req, res, next) => {
     next();
 })
 
+
 //********************USA AS ROTAS IMPORTADAS DA PASTA ROUTES******* */
+app.use('/', userRoutes);
 //rota para campgrounds tem que dar um require('./routes/campgrouns') lá em cima
-app.use('/campgrounds', campgrounds);
+app.use('/campgrounds', campgroundRoutes);
 //mesma coisa da linha acima só que para os reviews
-app.use('/campgrounds/:id/reviews', reviews);
+app.use('/campgrounds/:id/reviews', reviewsRoutes);
+
 
 //***************ROUTES************** */
 
