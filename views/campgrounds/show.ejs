@@ -32,6 +32,8 @@
         </div>
         <!--Segunda coluna-->
         <div class="col-6">
+            <!--Se tiver um usuário logado permite deixar review aula 519-->
+            <% if(currentUser) { %> 
             <!--Leave a Review Aula 463-->
             <h2>Leave a Review</h2>
             <form action="/campgrounds/<%=campground._id%>/reviews" method="POST" class="mb-3 validated-form" novalidate>
@@ -47,7 +49,8 @@
                     </div>                    
                 </div>
                 <button class="btn btn-success">Submit</button>
-            </form>  
+            </form> 
+            <% } %> 
             <% for(let review of campground.reviews) { %>
                 <div class="card mb-3">
                     <div class="card-body">

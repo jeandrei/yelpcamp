@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });//aula 485 minuto 4.40
 
 //importa a middleware validadeReview
-const { validadeReview } = require('../middlewere');
+const { validadeReview, isLoggedIn } = require('../middlewere');
 
 //Require campground lá da pasta models que demos um export
 const Campground = require('../models/campground');
@@ -21,20 +21,18 @@ const ExpressError = require('../utils/ExpressError');
 
 
 
-
-
-
-
 //reviws aula 464
 //o caminho para os reviews é /campgrounds/:id/reviews
 //porém como definimos que o padrão é esse no app.js
 //app.use('/campgrounds/:id/reviews', reviews)
 //então podemos apenas colocar / aula 485
-router.post('/', validadeReview, catchAsync(async (req, res) => {
+router.post('/', isLoggedIn, validadeReview, catchAsync(async (req, res) => {
     //find the correspond campground that we want to add the review to
     const campground = await Campground.findById(req.params.id);
     //Create a new review
     const review = new Review(req.body.review);
+    //coloco o id do usuário que criou o review aula 519
+    review.author = req.user._id;
     //push into the campground.reviews defined in the models/CampgroundSchema/reviews:[]
     campground.reviews.push(review);
     await review.save();
