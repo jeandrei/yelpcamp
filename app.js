@@ -126,7 +126,13 @@ passport.deserializeUser(User.deserializeUser());
 
 
 //middleware para apresentar a flash aula 488
+//res.locals são como variáveis globais que tenho acesso em todos os templates
 app.use((req, res, next) => {
+    //se quiser verificar o que está sendo passado pela session
+    //console.log(req.session);
+    //aula 512 currentUser helper na linha abaixo vou passar
+    //o id, username e email para ter acesso em todos os templates
+    res.locals.currentUser = req.user;
     //sejá lá o que esteja em res.locals.success teremos acesso no boilertemplate, não tem que passar
     //em toda request vamos pegar seja la o que tiver em req.flash('success') e passar 
     //em locals na chave success <%= success %>
