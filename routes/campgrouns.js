@@ -48,7 +48,8 @@ router.post('/', isLoggedIn, validateCampground, catchAsync(async (req, res, nex
 
 //SHOW
 router.get('/:id', catchAsync(async (req,res) => { 
-    const campground = await Campground.findById(req.params.id).populate('reviews');    
+    const campground = await Campground.findById(req.params.id).populate('reviews').populate('author');//populate author aula 515    
+    //console.log(campground);
     if(!campground){//se o campground não existe
         //Aula 490
         req.flash('error', 'Cannot find that campground!');
