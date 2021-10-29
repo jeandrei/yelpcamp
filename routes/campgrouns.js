@@ -1,24 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const catchAsync = require('../utils/catchAsync');
-//contem a schema de validação necessário para linha campgroundSchema.validate aula 445
-const { campgroundSchema } = require('../schemas.js');
-const ExpressError = require('../utils/ExpressError');
 const Campground = require('../models/campground');
 //Middlewere que verifica se o usuário está logado aula 510 arquivo /middlewere.ejs
-const { isLoggedIn } = require('../middlewere');
-
-//middleware para validar backend campground a schema está em schemas.js
-const validateCampground = (req, res, next) => {    
-    const { error } = campgroundSchema.validate(req.body);
-    if(error){
-        //cria uma unica linha com a mensagem de erro
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
-    }
-}
+const { isLoggedIn, isAuthor, validateCampground } = require('../middlewere');
 
 
 router.get('/', catchAsync(async (req,res) => {
@@ -40,6 +25,8 @@ router.post('/', isLoggedIn, validateCampground, catchAsync(async (req, res, nex
     //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
     //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
     const campground = new Campground(req.body.campground);
+    //campground.author é o autor do campground aula 515
+    campground.author = req.user._id;
     await campground.save();
     //flash está requerido em app.js
     req.flash('success', 'Successfully made a new campground');
@@ -60,20 +47,22 @@ router.get('/:id', catchAsync(async (req,res) => {
 
 //EDIT
 //Get data to show in the form
-router.get('/:id/edit', isLoggedIn, catchAsync(async (req,res) => {
-    const campground = await Campground.findById(req.params.id);
+//isAutor é uma middlewere que verifica se o usuário logado é o autor
+router.get('/:id/edit', isLoggedIn, isAuthor, catchAsync(async (req,res) => {
+    const { id } = req.params;
+    const campground = await Campground.findById(id);
     if(!campground){//se o campground não existe
         //Aula 490
         req.flash('error', 'Cannot find that campground!');
         return res.redirect('/campgrounds');
-    }
+    }    
     res.render('campgrounds/edit', { campground });
 }))
 
 //aula 411
-router.put('/:id', isLoggedIn, validateCampground, catchAsync(async (req,res) => {
+router.put('/:id', isLoggedIn, isAuthor, validateCampground, catchAsync(async (req,res) => {
     //res.send("IT WORKED!!!");
-    const { id } = req.params;
+    const { id } = req.params;    
     const campground = await Campground.findByIdAndUpdate(id,{ ...req.body.campground });
     req.flash('success', 'Successfully updated campground');
     res.redirect(`/campgrounds/${campground._id}`)
@@ -84,8 +73,8 @@ router.put('/:id', isLoggedIn, validateCampground, catchAsync(async (req,res) =>
 //para remover todos os reviews da campground foi criado uma middleware CampgroundSchema.post('findOneAndDelete'
 //que executa ao deletar um lá no arquivo models/campground 
 //aula 469
-router.delete('/:id', isLoggedIn, catchAsync(async (req, res) => {
-    const { id } = req.params;
+router.delete('/:id', isLoggedIn, isAuthor, catchAsync(async (req, res) => {
+    const { id } = req.params;    
     await Campground.findByIdAndDelete(id);
     req.flash('success', 'Successfully deleted campground');
     res.redirect('/campgrounds');

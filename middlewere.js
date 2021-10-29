@@ -1,3 +1,14 @@
+//OBS.: O CORRETO É CRIAR UM ARQUIVO DE MIDDLEWERE PARA CADA COISA
+//EXEMPLO USERSMIDDLEWERE, CAMPGROUNDSMIDDLEWERE ETC
+//tem que importar na rota
+//exemplo: const { isLoggedIn, isAuthor, validateCampground } = require('../middlewere');
+
+
+//contem a schema de validação necessário para linha campgroundSchema.validate aula 445
+const { campgroundSchema, reviewSchema } = require('./schemas.js');
+const ExpressError = require('./utils/ExpressError');
+const Campground = require('./models/campground');
+
 //middlewere para verificar se o usuário está logado aula 510
 //se der um console.log(req.user) vai vim id, username e email do usuário
 module.exports.isLoggedIn = (req, res, next) => {
@@ -12,3 +23,41 @@ module.exports.isLoggedIn = (req, res, next) => {
     } 
     next();
 }
+
+//middleware para validar backend campground a schema está em schemas.js
+module.exports.validateCampground = (req, res, next) => {    
+    const { error } = campgroundSchema.validate(req.body);
+    if(error){
+        //cria uma unica linha com a mensagem de erro
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    } else {
+        next();
+    }
+}
+
+//middleware para verificar se um campground é do usuáiro logado
+//para permitir ou negar alteração
+module.exports.isAuthor = async(req, res, next) => {
+    const { id } = req.params;
+    //busco o campground no bd para verificar se o mesmo pertence ao usuário logado aula 517
+    const campground = await Campground.findById(id);
+    if(!campground.author.equals(req.user._id)){
+        req.flash('error', 'You do not have permission to do that');
+        //usa o return para impedir que o código prossiga
+        return res.redirect(`/campgrounds/${id}`);
+    } 
+    next() ;
+}
+
+//middleware para validar backend review a schema está em schemas.js
+module.exports.validadeReview = (req, res, next) => {
+    const { error }  = reviewSchema.validate(req.body);  
+    if(error){
+         //cria uma unica linha com a mensagem de erro
+         const msg = error.details.map(el => el.message).join(',');
+         throw new ExpressError(msg, 400);
+     } else {
+         next();
+     }
+ }

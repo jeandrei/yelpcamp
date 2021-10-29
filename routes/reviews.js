@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });//aula 485 minuto 4.40
 
+//importa a middleware validadeReview
+const { validadeReview } = require('../middlewere');
+
 //Require campground lá da pasta models que demos um export
 const Campground = require('../models/campground');
 //Require review model
 const Review = require('../models/review');
 
 //contem a schema de validação necessário para linha campgroundSchema.validate aula 445
-const { reviewSchema } = require('../schemas.js');
+//const { reviewSchema } = require('../schemas.js');
 
 //catchAsync para não precisar fazer try catch em todas as validações nas rotas 
 //está em utils/catchAsync lá tem mais informações coloca em todas as rotas com async
@@ -17,17 +20,7 @@ const catchAsync = require('../utils/catchAsync');
 const ExpressError = require('../utils/ExpressError');
 
 
-//middleware para validar backend review a schema está em schemas.js
-const validadeReview = (req, res, next) => {
-    const { error }  = reviewSchema.validate(req.body);  
-    if(error){
-         //cria uma unica linha com a mensagem de erro
-         const msg = error.details.map(el => el.message).join(',');
-         throw new ExpressError(msg, 400);
-     } else {
-         next();
-     }
- }
+
 
 
 
