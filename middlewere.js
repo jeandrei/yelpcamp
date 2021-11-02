@@ -8,6 +8,7 @@
 const { campgroundSchema, reviewSchema } = require('./schemas.js');
 const ExpressError = require('./utils/ExpressError');
 const Campground = require('./models/campground');
+const Review = require('./models/review');
 
 //middlewere para verificar se o usuário está logado aula 510
 //se der um console.log(req.user) vai vim id, username e email do usuário
@@ -43,6 +44,20 @@ module.exports.isAuthor = async(req, res, next) => {
     //busco o campground no bd para verificar se o mesmo pertence ao usuário logado aula 517
     const campground = await Campground.findById(id);
     if(!campground.author.equals(req.user._id)){
+        req.flash('error', 'You do not have permission to do that');
+        //usa o return para impedir que o código prossiga
+        return res.redirect(`/campgrounds/${id}`);
+    } 
+    next() ;
+}
+
+//middleware para verificar se um review é do usuáiro logado
+//para permitir ou negar alteração aula 522
+module.exports.isReviewAuthor = async(req, res, next) => {
+    const { id, reviewId } = req.params;//reviewId vem lá de routers/reviews router.delete('/:reviewID')
+    //busco o campground no bd para verificar se o mesmo pertence ao usuário logado aula 517
+    const review = await Review.findById(reviewId);
+    if(!review.author.equals(req.user._id)){
         req.flash('error', 'You do not have permission to do that');
         //usa o return para impedir que o código prossiga
         return res.redirect(`/campgrounds/${id}`);

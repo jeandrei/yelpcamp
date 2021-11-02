@@ -2,12 +2,16 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });//aula 485 minuto 4.40
 
 //importa a middleware validadeReview
-const { validadeReview, isLoggedIn } = require('../middlewere');
+const { validadeReview, isLoggedIn, isReviewAuthor } = require('../middlewere');
 
 //Require campground lá da pasta models que demos um export
 const Campground = require('../models/campground');
 //Require review model
 const Review = require('../models/review');
+
+//controllers aula 534
+const reviews = require('../controllers/reviews');
+
 
 //contem a schema de validação necessário para linha campgroundSchema.validate aula 445
 //const { reviewSchema } = require('../schemas.js');
@@ -26,25 +30,7 @@ const ExpressError = require('../utils/ExpressError');
 //porém como definimos que o padrão é esse no app.js
 //app.use('/campgrounds/:id/reviews', reviews)
 //então podemos apenas colocar / aula 485
-router.post('/', isLoggedIn, validadeReview, catchAsync(async (req, res) => {
-    //find the correspond campground that we want to add the review to
-    const campground = await Campground.findById(req.params.id);
-    //Create a new review
-    const review = new Review(req.body.review);
-    //coloco o id do usuário que criou o review aula 519
-    review.author = req.user._id;
-    //push into the campground.reviews defined in the models/CampgroundSchema/reviews:[]
-    campground.reviews.push(review);
-    await review.save();
-    await campground.save();
-    req.flash('success', 'Created new review');
-    res.redirect(`/campgrounds/${campground._id}`);
-    /**
-     * A validação backend está lá no arquivo schemas.js
-     * module.exports.reviewSchema = Joi.object({
-     * Aula 465
-     */
-}))
+router.post('/', isLoggedIn, validadeReview, catchAsync(reviews.createReview))
 
 
 //APAGAR APENAS UM REVIEW
@@ -53,15 +39,7 @@ router.post('/', isLoggedIn, validadeReview, catchAsync(async (req, res) => {
 //o caminho completo é /campgrounds/:id/reviews/:reviewId
 //mas como definimos que o padrão é app.use('/campgrounds/:id/reviews', reviews)
 //lá no app.js então colocamos só a parte final aula 485
-router.delete('/:reviewId', catchAsync(async (req, res) => {
-    const {id, reviewId } = req.params;
-    //1ºremovo as referências desse review lá no campground para isso
-    //localizo o campground em modo update passando um objeto que contêm 
-    //um id e um método pull pull remove itens de um array
-    await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
-    await Review.findByIdAndDelete(reviewId);
-    req.flash('success', 'Successfully deleted review');
-    res.redirect(`/campgrounds/${id}`);
-}))
+//middlewere isReviewAuthor aula 522
+router.delete('/:reviewId', isLoggedIn, isReviewAuthor, catchAsync(reviews.deleteReview))
 
 module.exports = router;
