@@ -16,9 +16,12 @@ module.exports.createCampground = async (req, res, next) => {
     //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
     //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
     const campground = new Campground(req.body.campground);
+      //upload de imagens a partir da aula 528 muito difícil explicar aqui
+    campground.images = req.files.map(f=> ({ url: f.path, filename: f.filename })); 
     //campground.author é o autor do campground aula 515
     campground.author = req.user._id;
     await campground.save();
+    console.log(campground);
     //flash está requerido em app.js
     req.flash('success', 'Successfully made a new campground');
     res.redirect(`campgrounds/${campground._id}`);   
