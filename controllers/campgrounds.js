@@ -38,8 +38,9 @@ module.exports.showCampground = async (req,res) => { //populate author aula 515 
     if(!campground){//se o campground não existe
         //Aula 490
         req.flash('error', 'Cannot find that campground!');
-        return res.redirect('/campgrounds');
-    }
+        return res.redirect('/campgrounds');    
+    }    
+    //console.log(campground);
     res.render('campgrounds/show', { campground });
 }
 
