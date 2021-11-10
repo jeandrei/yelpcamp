@@ -39,7 +39,8 @@ router.route('/:id')
     //SHOW
     .get(catchAsync(campgrounds.showCampground))
     //aula 411
-    .put(isLoggedIn, isAuthor, validateCampground, catchAsync(campgrounds.updateCampground))
+    //upload.array('image') vem lá do formulário /views/edit input id e name image Aula 536
+    .put(isLoggedIn, isAuthor, upload.array('image'), validateCampground, catchAsync(campgrounds.updateCampground))
     //remove uma campground
     //para remover todos os reviews da campground foi criado uma middleware CampgroundSchema.post('findOneAndDelete'
     //que executa ao deletar um lá no arquivo models/campground 
