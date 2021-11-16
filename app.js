@@ -3,8 +3,8 @@ if(process.env.NODE_ENV !== "production"){
     require('dotenv').config();
 }
 
-console.log(process.env.SECRET);
-console.log(process.env.API_KEY);
+//console.log(process.env.SECRET);
+//console.log(process.env.API_KEY);
 
 //Require o express
 const express = require('express');

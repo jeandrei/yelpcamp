@@ -41,7 +41,16 @@
                     <input class="form-control" type="file" id="image" name="image" multiple>
                     <!-- multiple é para permitir fazer o upload de multiplos arquivos -->
                 </div>
-
+                <!--REMOVER IMAGENS AULA 539 -->
+                <div class="mb-3">
+                    <% campground.images.forEach(function(img, i) { %>
+                        <img src="<%= img.thumbnail %>" class="img-thumbnail" alt="">
+                        <div class="form-check-inline">
+                            <input type="checkbox" id="image-<%=i%>" name="deleteImages[]" value="<%=img.filename%>">
+                        </div>
+                        <label for="image-<%=i%>">Delete?</label>
+                    <% }) %>  
+                </div>
                 <div class="mb-3">
                     <button class="btn btn-info">Update campground</button>
                 </div>
