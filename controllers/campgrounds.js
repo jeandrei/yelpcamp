@@ -1,6 +1,12 @@
 //controllers seção 53
 
 const Campground = require('../models/campground');
+
+//mbxGeocoding aula 543
+const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
+const mapBoxToken = process.env.MAPBOX_TOKEN;
+const geocoder = mbxGeocoding({ accessToken:mapBoxToken });
+
 const { cloudinary } = require('../cloudinary');
 
 module.exports.index = async (req,res) => {
@@ -14,10 +20,16 @@ module.exports.renderNewForm = (req, res) => {
 }
 
 module.exports.createCampground = async (req, res, next) => {     
+    const geoData = await geocoder.forwardGeocode({
+        query: req.body.campground.location,
+        limit: 1
+    }).send();    
     //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
     //aula 444 validação dos dados antes de enviar campgroundSchema é para o joi e não para o mongoose   
     const campground = new Campground(req.body.campground);
-      //upload de imagens a partir da aula 528 muito difícil explicar aqui
+    //Geometry tem que assistir todas as aulas dessa sessão começa em 542
+    campground.geometry = geoData.body.features[0].geometry;
+    //upload de imagens a partir da aula 528 muito difícil explicar aqui
     campground.images = req.files.map(f=> ({ url: f.path, filename: f.filename })); 
     //campground.author é o autor do campground aula 515
     campground.author = req.user._id;
