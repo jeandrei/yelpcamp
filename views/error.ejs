@@ -4,7 +4,12 @@
         <div class="alert alert-danger" role="alert">
             <h4 class="alert-heading"><%= err.message %> !</h4>
             <!-- err.stack é o erro que seria apresentado no terminal -->
+            <!-- NODE_ENV é definido no arquivo app.js -->
+            <!-- se estiver em modo de produção deixamos habilitado para ver os erros -->
+            <!-- caso contrário desabilitamos para o usuário não ver erros do sistema aula 567 -->
+            <% if (process.env.NODE_ENV !== "production") { %> 
             <p><%= err.stack  %> </p>
+            <% } %> 
         </div>
     </div>
 </div>

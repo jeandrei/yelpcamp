@@ -1,10 +1,12 @@
-//Aula 531 para entender isso
-if(process.env.NODE_ENV !== "production"){
+//Aula 531 para entender isso tem influencia no arquivo error.ejs
+/* if(process.env.NODE_ENV !== "production"){
+    require('dotenv').config(); ele desativou na aula 567 não entendi pq
+} */
     require('dotenv').config();
-}
 
 //console.log(process.env.SECRET);
 //console.log(process.env.API_KEY);
+
 
 //Require o express
 const express = require('express');
@@ -61,6 +63,13 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
 
+//npm i express-mongo-sanitize proibe o equivalente a sql injection
+//aula 563
+const mongoSanitize = require('express-mongo-sanitize');
+
+//npm i helmet aula 568
+const helmet = require('helmet');
+
 
 //******************ROTAS importadas da pasta routes******************
 //Requer a rota para campground arquivo /routes/campgrounds.js aula 484
@@ -73,7 +82,15 @@ const userRoutes = require('./routes/users');
 //Conectamos ao banco de dados mongoose
 //no curso abaixo de useNewUrlParser ele colocou useCreateIndex: true, 
 //mas não é mais suportado
-mongoose.connect('mongodb://localhost:27017/yelp-camp',{ 
+
+
+//Quando estiver em produção descomente a linha abaixo dados em cloud mongo Atlas aula 570
+//const dbUrl = process.env.DB_URL;
+
+//Quando estiver em desenvolvimento descomente a linha abaixo
+const dbUrl = 'mongodb://localhost:27017/yelp-camp';
+
+mongoose.connect(dbUrl,{ 
     useNewUrlParser: true, 
     useUnifiedTopology: true    
 });
@@ -108,13 +125,18 @@ app.use(methodOverride('_method'));
 //apenas pelo nome do arquivo exemplo <script src="arquivo.js">
 app.use(express.static(path.join(__dirname, 'public')));
 
+//proibe o equivalente ao sql injection aula 563
+app.use(mongoSanitize());
+
 //Session Aula 487
 const sessionConfig = {
+    name: 'session',
     secret: 'thisshouldbeabettersecret!',
     resave: false,
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
+        //secure: true, descomente essa linha quando publicar o site aula 566
         //1000 milisegundos em um segundo * 60 segundos= 1 minuto
         // * 60 minutos em uma hora * 24 horas = 1dia * 7 dias da semana
         expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
@@ -123,6 +145,55 @@ const sessionConfig = {
 }
 app.use(session(sessionConfig))
 app.use(flash());
+
+//helmet segurança aula 568 e 569
+app.use(helmet());
+
+const scriptSrcUrls = [
+    "https://stackpath.bootstrapcdn.com",   
+    "https://api.tiles.mapbox.com",
+    "https://api.mapbox.com",
+    "https://kit.fontawesome.com",
+    "https://cdnjs.cloudflare.com",
+    "https://cdn.jsdelivr.net",
+];
+const styleSrcUrls = [
+    "https://cdn.jsdelivr.net",
+    "https://kit-free.fontawesome.com",
+    "https://stackpath.bootstrapcdn.com",
+    "https://api.mapbox.com",
+    "https://api.tiles.mapbox.com",
+    "https://fonts.googleapis.com",
+    "https://use.fontawesome.com",
+];
+const connectSrcUrls = [
+    "https://api.mapbox.com",
+    "https://*.tiles.mapbox.com",
+    "https://events.mapbox.com",
+];
+const fontSrcUrls = [];
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: [],
+            connectSrc: ["'self'", ...connectSrcUrls],
+            scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+            styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+            workerSrc: ["'self'", "blob:"],
+            childSrc: ["blob:"],
+            objectSrc: [],
+            imgSrc: [
+                "'self'",
+                "blob:",
+                "data:",
+                "https://res.cloudinary.com/de6gtuvae/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT! de6gtuvae é o nome da conta no claudinary 
+                "https://images.unsplash.com",
+            ],
+            fontSrc: ["'self'", ...fontSrcUrls],
+        },
+    })
+);
+
 
 //Autenticação Aula 506
 app.use(passport.initialize());
@@ -136,6 +207,7 @@ passport.deserializeUser(User.deserializeUser());
 //middleware para apresentar a flash aula 488
 //res.locals são como variáveis globais que tenho acesso em todos os templates
 app.use((req, res, next) => {
+    //console.log(req.query);
     //se quiser verificar o que está sendo passado pela session
     //console.log(req.session);
     //aula 512 currentUser helper na linha abaixo vou passar

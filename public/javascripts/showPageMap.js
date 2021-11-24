@@ -7,6 +7,9 @@ center: campground.geometry.coordinates, // starting position [lng, lat]
 zoom: 9 // starting zoom
 });
 
+/* aula 562 adiciona os botões de zoom no mapa */
+map.addControl(new mapboxgl.NavigationControl());
+
 new mapboxgl.Marker()
 .setLngLat(campground.geometry.coordinates)
 .setPopup(

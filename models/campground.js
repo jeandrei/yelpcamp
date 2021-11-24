@@ -25,6 +25,9 @@ ImageSchema.virtual('thumbnail').get(function() {
     return this.url.replace('/upload', '/upload/w_200');
 });
 
+/* Aula 555 */
+const opts = { toJSON: { virtuals: true }};
+
 //Criamos uma Schema
 const CampgroundSchema = new Schema({
     title: String,
@@ -58,6 +61,13 @@ const CampgroundSchema = new Schema({
         }
     ]
 
+}, opts);
+
+/* Aula 555 */
+CampgroundSchema.virtual('properties.popUpMarkup').get(function() {
+    return `
+    <strong><a href="/campgrounds/${this._id}">${this.title}</a></strong>
+    <p>${this.description.substring(0,20)}...</p>`
 });
 
 
