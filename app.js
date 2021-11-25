@@ -1,3 +1,9 @@
+/**
+ * IMPORTANTE REALIZAR O PROCEDIMENTO DO ARQUIVO .GITIGNORE NO INICIO DO PROJETO
+ * PARA NÃO COMPARTILHAR AS SENHAS DO .ENV NO GIT
+ * AULA 573
+ */
+
 //Aula 531 para entender isso tem influencia no arquivo error.ejs
 /* if(process.env.NODE_ENV !== "production"){
     require('dotenv').config(); ele desativou na aula 567 não entendi pq
@@ -70,6 +76,11 @@ const mongoSanitize = require('express-mongo-sanitize');
 //npm i helmet aula 568
 const helmet = require('helmet');
 
+//session no mongo aula 571 npm install connect-mongo@3.2.0
+//tem que ser essa versão se não muda a sintaxe
+//https://www.npmjs.com/package/connect-mongo
+const MongoDBStore = require("connect-mongo")(session);
+
 
 //******************ROTAS importadas da pasta routes******************
 //Requer a rota para campground arquivo /routes/campgrounds.js aula 484
@@ -85,10 +96,10 @@ const userRoutes = require('./routes/users');
 
 
 //Quando estiver em produção descomente a linha abaixo dados em cloud mongo Atlas aula 570
-//const dbUrl = process.env.DB_URL;
+const dbUrl = process.env.DB_URL;
 
 //Quando estiver em desenvolvimento descomente a linha abaixo
-const dbUrl = 'mongodb://localhost:27017/yelp-camp';
+//const dbUrl = 'mongodb://localhost:27017/yelp-camp';
 
 mongoose.connect(dbUrl,{ 
     useNewUrlParser: true, 
@@ -128,10 +139,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 //proibe o equivalente ao sql injection aula 563
 app.use(mongoSanitize());
 
+const secret = process.env.SECRET || 'thisshouldbeabettersecret!';
+
+const store = new MongoDBStore({
+    url: dbUrl,
+    secret,
+    touchAfter: 24 * 60 * 60
+});
+
+store.on("error", function(e){
+    console.log("SESSION STORE ERROR", e);
+})
+
 //Session Aula 487
 const sessionConfig = {
+    store,
     name: 'session',
-    secret: 'thisshouldbeabettersecret!',
+    secret,
     resave: false,
     saveUninitialized: true,
     cookie: {
